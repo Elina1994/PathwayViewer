@@ -31,7 +31,7 @@ namespace PathwayViewer
         #region PRIVATE METHODS
 
         /// <summary>
-        /// Reformats genbank lines by removing unnecessary characters 
+        /// Reformats genbank lines by removing unnecessary characters.
         /// </summary>
         /// <param name="genbankLine">line from a genbank file</param>
         /// <returns>reformatted genbank lines</returns>
@@ -78,6 +78,7 @@ namespace PathwayViewer
 
             try
             {
+                // booleans to check whether all elements already are collected
                 bool oldLocusTagDone = false;
                 bool locusTagDone = false;
                 bool geneDone = false;
@@ -359,6 +360,7 @@ namespace PathwayViewer
 
             try
             {
+                // determine class read amount
                 foreach (KeyValuePair<string, Dictionary<string, List<Accession>>> pathwayName in pathwayNames)
                 {
                     pathwayClassReadAmount += GetPathwaySubClassNodeReadAmount(pathwayName.Value);
@@ -383,6 +385,7 @@ namespace PathwayViewer
 
             try
             {
+                // determine subclass read amount
                 foreach (KeyValuePair<string, List<Accession>> pathwayName in pathwayNames)
                 {
                     pathwayClassReadAmount += GetPathwayNameReadAmount(pathwayName.Value);
@@ -407,6 +410,7 @@ namespace PathwayViewer
 
             try
             {
+                // get pathwayname read amount
                 foreach (Accession accession in accessions)
                 {
                     pathwayNameReadAmount += accession.ReadTotalAmount;
@@ -426,6 +430,7 @@ namespace PathwayViewer
 
             try
             {
+                // generate nodes
                 string nodeTemplate = string.Format("<node name=\"VARNODENAME\"><magnitude><val> VARMAGNITUDE</val></magnitude><score><val> VARSCORE</val></score>{0}", (char)10);
                 node = nodeTemplate.Replace("VARNODENAME", nodeName).Replace("VARMAGNITUDE", magnitude.ToString()).Replace("VARSCORE", score.ToString());
             }
@@ -441,18 +446,24 @@ namespace PathwayViewer
 
         #region PUBLIC METHODS
 
+        /// <summary>
+        /// Reads the configuration file settings from PathwayViewer.conf
+        /// </summary>
+        /// <returns>Dictionary with settings</returns>
         public Dictionary<string, Setting> ReadConfigurationFile()
         {
             Dictionary<string, Setting> settings = new Dictionary<string, Setting>();
 
             try
             {
+                // path to configuration file
                 string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory.ToString(), "PathwayViewer.conf");
 
                 if (File.Exists(filePath))
                 {
                     bool headerCollected = false;
-                    
+
+                    // header id's
                     int keyId = -1;
                     int keyTypeId = -1;
                     int valueId = -1;
@@ -470,6 +481,7 @@ namespace PathwayViewer
                             case false:
                                 if (line.ToUpper().StartsWith("#KEY"))
                                 {
+                                    // collect headers
                                     for (int i = 0; i < lineParts.Length; i++)
                                     {
                                         if (lineParts[i].ToUpper().Contains("KEY") && !lineParts[i].ToUpper().Contains("TYPE")) { keyId = i; }
@@ -487,6 +499,7 @@ namespace PathwayViewer
                                 if (!line.StartsWith("#") && line.Trim() != string.Empty)
                                 {
                                     Setting setting = new Setting();
+                                    // assign data from headers
                                     if (keyId != -1 && lineParts.Length > keyId) { setting.Key = lineParts[keyId]; }
                                     if (keyTypeId != -1 && lineParts.Length > keyTypeId) { setting.KeyType = lineParts[keyTypeId]; }
                                     if (valueId != -1 && lineParts.Length > valueId) { setting.Value = lineParts[valueId]; }
@@ -496,6 +509,7 @@ namespace PathwayViewer
                                     Setting settingTmp = null;
                                     if (!settings.TryGetValue(setting.Key, out settingTmp))
                                     {
+                                        // add settings to dictionary
                                         settings.Add(setting.Key, setting);
                                     }
                                 }
@@ -532,9 +546,11 @@ namespace PathwayViewer
 
             try
             {
+                // logfile
                 string fileName = string.Format("error_{0}_{1}.log", Environment.UserName, this.Controller.GetCustomDate());
                 string filePath = Path.Combine(this.Controller.LogDir, fileName);
 
+                // write errors to logfile
                 StreamWriter writer = new StreamWriter(filePath, true);
                 writer.WriteLine(message);
                 writer.Close();
@@ -560,6 +576,7 @@ namespace PathwayViewer
 
             try
             {
+                // get filename
                 if (File.Exists(filePath))
                 {
                     FileInfo fi = new FileInfo(filePath);
@@ -585,6 +602,7 @@ namespace PathwayViewer
 
             try
             {
+                // get file directory
                 FileInfo file = new FileInfo(filePath);
                 DirectoryInfo dir = file.Directory;
                 fileDir = dir.Name;
@@ -608,9 +626,11 @@ namespace PathwayViewer
 
             try
             {
+                
                 string fileName = string.Format("KeggOrganisms_{0}.kegg", this.Controller.GetCustomDate());
                 string filePath = Path.Combine(this.Controller.KeggDir, fileName);
                 StreamWriter writer = new StreamWriter(filePath, false);
+                // write all organisms to file
                 writer.Write(content);
                 writer.Close();
 
@@ -651,6 +671,7 @@ namespace PathwayViewer
                         string line = reader.ReadLine();
                         lines.Add(line);
 
+                        // extract gene regions
                         if (line.ToUpper().StartsWith("     GENE   "))
                         {
                             geneLineIds.Add(lineIndex);
@@ -666,6 +687,7 @@ namespace PathwayViewer
                         geneLineIds[i] += 1;
                         if (i < geneLineIds.Count - 1)
                         {
+                            // continue to collect until a new region appears
                             while (lines[geneLineIds[i]].StartsWith("              "))
                             {
                                 geneLine += string.Format("{0}", lines[geneLineIds[i]]);
@@ -692,6 +714,7 @@ namespace PathwayViewer
                         geneLine = ReformatGenbankLine(geneLine);
                         Gene gene = GetPropertiesFromGene(geneLine);
 
+                        // add gene regions
                         accessionGenes.Add(gene);
                     }
                 }
@@ -718,11 +741,13 @@ namespace PathwayViewer
             try
             {
                 StreamWriter writer = null;
+                // accession locus_tag file name
                 string fileName = string.Format("AccessionLocustags_{0}.mapping", folderName);
                 string filePath = Path.Combine(this.Controller.NcbiDir, fileName);
 
                 if (!File.Exists(filePath))
                 {
+                    // write mapping to file
                     writer = new StreamWriter(filePath, true);
                     writer.WriteLine(string.Format("Accession:{0}LocusTag:{0}OldLocusTag:", (char)9));
                 }
@@ -774,20 +799,23 @@ namespace PathwayViewer
 
                         if (lineParts.Length >= 2)
                         {
+                            // extract entry code, for example: hsa
                             Pathway pathway = new Pathway();
                             pathway.Code = lineParts[0].Split(':')[1];
                             string locustagValue = lineParts[1].Split(':')[1].ToUpper().Trim();
 
                             List<Pathway> pathways = null;
+                            // map locus_tags to pathways
                             if (locusTagDict.TryGetValue(locustagValue, out pathways))
                             {
+                                // locus_tag exists
                                 locusTagDict[locustagValue].Add(pathway);
                             }
                             else
                             {
+                                // add pathway if locus_tag not already existing
                                 pathways = new List<Pathway>();
                                 pathways.Add(pathway);
-
                                 locusTagDict.Add(locustagValue, pathways);
                             }
                         }
@@ -903,6 +931,7 @@ namespace PathwayViewer
 
                 if (!File.Exists(filePath))
                 {
+                    // write accession, locus_tag pathway header to file
                     writer = new StreamWriter(filePath, false);
                     writer.WriteLine(string.Format("Accession:{0}LocusTag:{0}Pathway:", (char)9));
                 }
@@ -920,6 +949,7 @@ namespace PathwayViewer
                             if (locusTagMapping.Key != string.Empty && locustagPathway.Key != string.Empty && pathway.Code != string.Empty)
                             {
                                 string line = string.Format("{1}{0}{2}{0}{3}", (char)9, locusTagMapping.Key, locustagPathway.Key, pathway.Code);
+                                // write accession, locus_tag pathway mapping to file
                                 writer.WriteLine(line);
                             }
                         }
@@ -965,6 +995,7 @@ namespace PathwayViewer
                         if (!line.Contains(":"))
                         {
                             string[] lineParts = line.Split((char)9);
+                            // get individual components
                             if (lineParts.Length >= 3)
                             {
                                 if (lineParts[0].ToUpper().Trim() != string.Empty &&
@@ -1022,8 +1053,12 @@ namespace PathwayViewer
             }
             return accessionLocustagPathwaysDic;
         }
-
-        //TODO: summary
+        
+               
+        /// <summary>
+        /// Reads a taxonomy file and extracts scientific name plus id to a dictionary
+        /// </summary>
+        /// <returns>A dictionary (taxonomies) with scientificname and id</returns>
         public Dictionary<int, Taxonomy> ReadTaxonomies()
         {
             Dictionary<int, Taxonomy> taxonomies = new Dictionary<int, Taxonomy>();
@@ -1034,6 +1069,7 @@ namespace PathwayViewer
                 if (File.Exists(filePath))
                 {
                     StreamReader reader = new StreamReader(filePath);
+                    // boolean to check whether all data belonging to the header is collected
                     bool headerCollected = false;
 
                     int taxId = -1;
@@ -1069,7 +1105,7 @@ namespace PathwayViewer
                                     Taxonomy record = new Taxonomy();
                                     int.TryParse(lineParts[taxId], out record.Id);
                                     record.ScientificName = lineParts[scientificNameId];
-
+                                    // add taxonomies to dic
                                     taxonomies.Add(record.Id, record);
                                     break;
 
@@ -1122,9 +1158,11 @@ namespace PathwayViewer
                                 if (int.TryParse(lineParts[taxIdId], out taxonomyId))
                                 {
                                     Dictionary<string, List<Pathway>> accessionLocusTagsPathways = null;
+                                    // accession exists
                                     if (accessionLocustagPathwaysDic.TryGetValue(accessionId, out accessionLocusTagsPathways))
                                     {
                                         List<string> accessions = null;
+                                        // taxonomy does not exist
                                         if (!taxonomyAccessionsDic.TryGetValue(taxonomyId, out accessions))
                                         {
                                             accessions = new List<string>();
@@ -1133,6 +1171,7 @@ namespace PathwayViewer
                                         }
                                         else
                                         {
+                                            // taxonomy exists
                                             taxonomyAccessionsDic[taxonomyId].Add(accessionId);
                                         }
                                     }
@@ -1170,6 +1209,7 @@ namespace PathwayViewer
                         foreach (string accession in taxonomyId.Value)
                         {
                             string line = string.Format("{1}{0}{2}", (char)9, taxonomyId.Key, accession);
+                            // write taxonomy mapping file to directory
                             writer.WriteLine(line);
                         }
                     }
@@ -1265,6 +1305,7 @@ namespace PathwayViewer
                     string accession = string.Empty;
                     string sequence = string.Empty;
 
+                    // generate LSU and SSU Dic
                     Dictionary<string, string> accessionsSequenceLsuDic = new Dictionary<string, string>();
                     Dictionary<string, string> accessionsSequenceSsuDic = new Dictionary<string, string>();
 
@@ -1278,14 +1319,17 @@ namespace PathwayViewer
                             if (lineParts.Length > 4)
                             {
                                 silvaType = lineParts[2];
+                                // if accession exists
                                 if (accession != string.Empty)
                                 {
                                     string sequenceTmp = string.Empty;
                                     Dictionary<string, string> accessionsSequenceDic = null;
+                                    // check if silvaType exists
                                     if (silvaTypeAccessionsSequencesDic.TryGetValue(silvaType, out accessionsSequenceDic))
                                     {
                                         if (!accessionsSequenceDic.TryGetValue(accession, out sequenceTmp))
                                         {
+                                            // add accession, sequence and silvaType to dictionary
                                             accessionsSequenceDic.Add(accession, sequence);
                                             silvaTypeAccessionsSequencesDic[silvaType] = accessionsSequenceDic;
                                             accession = string.Empty;
@@ -1294,6 +1338,7 @@ namespace PathwayViewer
                                     }
                                     else
                                     {
+                                        // silvaType does not exist
                                         accessionsSequenceDic = new Dictionary<string, string>();
                                         accessionsSequenceDic.Add(accession, sequence);
                                         silvaTypeAccessionsSequencesDic.Add(silvaType, accessionsSequenceDic);
@@ -1334,12 +1379,14 @@ namespace PathwayViewer
 
             try
             {
+                // pathway file
                 string filePath = Path.Combine(this.Controller.KeggDir, "pathways.tab");
                 if (File.Exists(filePath))
                 {
                     StreamReader reader = new StreamReader(filePath);
                     bool headerCollected = false;
 
+                    // variables
                     int codeId = -1;
                     int nameId = -1;
                     int classId = -1;
@@ -1524,8 +1571,10 @@ namespace PathwayViewer
                 {
                     FileInfo fileInfo = new FileInfo(filePath);
                     string[] fileInfoParts = fileInfo.Name.Split('_');
-                    if (fileInfoParts.Length > 3)
+                    if (fileInfoParts.Length > 2)
                     {
+
+                        // extraction code of project
                         accessionsFile.ExtractCode = string.Format("{0}_{1}_{2}", fileInfoParts[0], fileInfoParts[1], fileInfoParts[2]);
 
                         StreamReader reader = new StreamReader(filePath);
@@ -1533,6 +1582,7 @@ namespace PathwayViewer
 
                         bool headerCollected = false;
 
+                        // variables within file
                         int nameId = -1;
                         int totalreadAmountid = -1;
                         int ncbiTaxId = -1;
@@ -1555,7 +1605,7 @@ namespace PathwayViewer
                                         {
                                             for (int i = 0; i < lineParts.Length; i++)
                                             {
-                                                //extract data based on header name
+                                                // get header names
                                                 if (lineParts[i].ToUpper().Contains("ACCESSION") && !lineParts[i].ToUpper().Contains("MRT")) { nameId = i; }
                                                 if (lineParts[i].ToUpper().Contains("READTOTALAMOUNT")) { totalreadAmountid = i; }
                                                 if (lineParts[i].ToUpper().Contains("NCBI_TAXONOMYID")) { ncbiTaxId = i; }
@@ -1573,6 +1623,7 @@ namespace PathwayViewer
                                         // Data from file
                                         Accession accession = new Accession();
 
+                                        // assign data to header names
                                         accession.Name = lineParts[nameId];
                                         int.TryParse(lineParts[totalreadAmountid], out accession.ReadTotalAmount);
                                         int.TryParse(lineParts[ncbiTaxId], out accession.NCBI_Taxonomy.Id);
@@ -1687,7 +1738,7 @@ namespace PathwayViewer
         /// <returns></returns>
         public bool WriteAccessionSequenceToFasta(AccessionFile accessionFile)
         {
-            //returns a boolean when writing of the data fails
+            // returns a boolean if writing of the data fails
             bool succes = false;
             
             try
@@ -1701,12 +1752,12 @@ namespace PathwayViewer
 
                     foreach (Accession accession in accessionList.Value)
                     {
-                        //calculate percentage
+                        // calculate percentage
                         float readTotalAmount = float.Parse(accession.ReadTotalAmount.ToString());
                         float totalReadAmount = float.Parse(accessionFile.SumTotalReadAmount.ToString());
                         percentage = ((readTotalAmount / totalReadAmount) * 100).ToString("N2").Replace(",", ".");
 
-                        //write data to file
+                        // write data to file
                         string fastaHeader = string.Format(">{0}{1}{2}{1}{3}{1}{4}{5}{1}", accession.Name, (char)124, accession.MRT_Taxonomy.ScientificName, accession.ReadTotalAmount, percentage, (char)37);
                         writer.WriteLine(fastaHeader);
                         string sequence = accession.Sequence;
@@ -1789,6 +1840,7 @@ namespace PathwayViewer
                         string line = reader.ReadLine();
 
 
+                        // replace organism_tree variable with newick string
                         if (line.Contains("var") && line.Contains("organism_tree"))
                         {
                             organismTreeLine = line;

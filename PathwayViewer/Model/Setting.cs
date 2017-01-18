@@ -1,5 +1,8 @@
 ﻿namespace PathwayViewer
 {
+    /// <summary>
+    /// This class contains the Setting object properties
+    /// </summary>
     public class Setting
     {
         public string Key = string.Empty;

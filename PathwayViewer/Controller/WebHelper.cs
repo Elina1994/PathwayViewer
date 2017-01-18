@@ -33,17 +33,20 @@
 
             try
             {
+                // url to kegg organism file
                 url = "http://rest.kegg.jp/list/organism";
                 
                 WebRequest request = WebRequest.Create(url);
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 
+                // get data from url
                 Stream dataStream = response.GetResponseStream();
                 StreamReader reader = new StreamReader(dataStream);
                 string responseFromServer = reader.ReadToEnd();
 
                 reader.Close();
                 response.Close();
+                // write content to file
                 outputPath = this.Controller.FileHelper.WriteKeggOrganismFile(responseFromServer);
             }
             catch (Exception ex)

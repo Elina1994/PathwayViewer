@@ -153,7 +153,7 @@
 
 
         /// <summary>
-        ///  Resizes an image when changing the button size.
+        ///  Resizes an image when changing the button size. (c) Marcel Burger
         /// </summary>
         /// <param name="imgToResize">Image to resize</param>
         /// <param name="newSize">Used for the new size of an image</param>
@@ -202,6 +202,12 @@
             return (Image)b;
         }
 
+        /// <summary>
+        /// Shows the message assigned to the image. (c) Marcel Burger
+        /// </summary>
+        /// <param name="tip"></param>
+        /// <param name="toolTipIcon"></param>
+        /// <param name="control"></param>
         private void ShowToolTip(string tip, ToolTipIcon toolTipIcon, Control control)
         {
             try
@@ -230,6 +236,7 @@
         {
             try
             {
+                // cleans up log when over 500 lines are displayed
                 while (this.richTextBoxLog.Lines.Length > 500)
                 {
                     this.richTextBoxLog.ReadOnly = false;
@@ -253,8 +260,9 @@
         {
             try
             {
-                string keggDownloadFile = this.Controller.WebHelper.DownloadKeggOrganismFile(string.Empty); 
+                string keggDownloadFile = this.Controller.WebHelper.DownloadKeggOrganismFile(string.Empty);
 
+                // start downloading if url is not empty
                 if (keggDownloadFile != string.Empty)
                 {
                     ShowMessage(MessageType.Info, "Downloading of Kegg file is finished.");
@@ -284,6 +292,7 @@
             {
                 string scriptPath = this.Controller.KeggEntryScriptPath;
 
+                // open new file dialog
                 OpenFileDialog dialog = new OpenFileDialog();
                 dialog.Multiselect = false;
                 dialog.ShowDialog();
@@ -292,8 +301,10 @@
                 {
                     string keggFilePath = dialog.FileName;
                     string keggPathwayDir = this.Controller.KeggPathwaysDir;
+                    // script arguments
                     string arguments = string.Format("{0} {1} {2}", scriptPath, keggFilePath, keggPathwayDir);
 
+                    // start python process
                     ProcessStartInfo processStartInfo = new ProcessStartInfo("python");
                     processStartInfo.Arguments = arguments;
                     processStartInfo.UseShellExecute = false;
@@ -337,13 +348,16 @@
         {
             try
             {
+                // path to python script
                 string scriptPath = this.Controller.NcbiGenbankScriptPath;
                 string genomeFolderPath = this.Controller.NcbiGenomesDir;
                 string accessionFolderPath = this.Controller.MainDir;
+                // script arguments
                 string arguments = string.Format("{0} {1} {2}", scriptPath, genomeFolderPath, accessionFolderPath);
 
                 ShowMessage(MessageType.Info, "Starting to collect Genbank files....");
 
+                // start python process
                 ProcessStartInfo processStartInfo = new ProcessStartInfo("python");
                 processStartInfo.Arguments = arguments;
                 processStartInfo.UseShellExecute = false;
@@ -377,6 +391,7 @@
         {
             try
             {
+                // boolean to detect errors
                 bool detectedErrors = false;
 
                 OpenFileDialog dialog = new OpenFileDialog();
@@ -437,6 +452,7 @@
                 Dictionary<string, List<Pathway>> keggPathways = new Dictionary<string, List<Pathway>>();
                 Dictionary<string, Dictionary<string, List<Pathway>>> ncbiGeneKeggPathways = new Dictionary<string, Dictionary<string, List<Pathway>>>();
 
+                // open file dialog to select kegg mapping files
                 OpenFileDialog dialogKeggFile = new OpenFileDialog();
                 dialogKeggFile.Multiselect = true;
                 dialogKeggFile.ShowDialog();
@@ -456,6 +472,7 @@
                     ShowMessage(MessageType.Error, "Reading of KEGG mapping files failed");
                 }
 
+                // open file dialog to select ncbi mapping files
                 OpenFileDialog dialogNcbiFile = new OpenFileDialog();
                 dialogNcbiFile.Multiselect = true;
                 dialogNcbiFile.ShowDialog();
@@ -465,6 +482,7 @@
                 {
                     foreach (string fileName in dialogNcbiFile.FileNames)
                     {
+                        // map accession to locus_tags pathways
                         ncbiGeneKeggPathways = this.Controller.FileHelper.ReadNcbiMappingFileAndMapLocusTags(fileName, keggPathways, ncbiGeneKeggPathways);
                         this.Controller.FileHelper.WriteAccessionLocustagPathwayMapping(ncbiGeneKeggPathways);
                     }
@@ -498,11 +516,11 @@
         {
             try
             {
-                Cursor = Cursors.WaitCursor;
-
+            
                 Dictionary<int, List<string>> taxonomyAccessionDic = new Dictionary<int, List<string>>();
                 Dictionary<string, Dictionary<string, List<Pathway>>> accessionLocustagPathwaysDic = ReadKeggNcbiMappingFile();
 
+                // open new file dialog
                 OpenFileDialog dialog = new OpenFileDialog();
                 dialog.Multiselect = true;
                 dialog.ShowDialog();
@@ -512,12 +530,14 @@
                     int counter = 0;
                     foreach (string file in dialog.FileNames)
                     {
+                        // counter to count amount of files
                         counter += 1;
                         ShowMessage(MessageType.Info, string.Format("Reading Accession to TaxId mapping file {0} [{1} of {2}]. Please wait ...", file, counter, dialog.FileNames.Length));
                         taxonomyAccessionDic = this.Controller.FileHelper.MapTaxonomiesToAccessions(file, accessionLocustagPathwaysDic, taxonomyAccessionDic);
                     }
                     ShowMessage(MessageType.Info, "Mapping of Taxonomy to accessions has finished ...");
 
+                    // write mapping file to directory
                     ShowMessage(MessageType.Info, "Writing Taxonomy to Accessions mapping file. Please wait ...");
                     if (this.Controller.FileHelper.WriteTaxonomyAccessionsMappingToFile(taxonomyAccessionDic))
                     {
@@ -551,10 +571,9 @@
             {
                 if (!DataInMemory)
                 {
+                    // read all mapped data into memory
                     this.AccessionLocustagPathwaysDic = ReadKeggNcbiMappingFile();
-
-                    Cursor = Cursors.WaitCursor;
-
+                    
                     ShowMessage(MessageType.Info, "Reading taxonomy accession mapping file. Please wait ...");
                     this.TaxIdAccessionsDic = this.Controller.FileHelper.ReadTaxIdAccessionMappingFile();
                     ShowMessage(MessageType.Info, "Reading taxonomy accession mapping file was finished ...");
@@ -586,34 +605,7 @@
                    Environment.NewLine, ex.Message, this.GetType().Name, MethodBase.GetCurrentMethod().Name));
             }
         }
-
-        /// <summary>
-        /// Generates fasta files for the SSU and the LSU and calls PathwayViewer's: ReadaccessionLocustagPathwayFile.
-        /// </summary>
-        private void GenerateDataForMultipleSequenceAlignment()
-        {
-            try
-            {
-                int accessionCutOff = 0;
-                if (this.textBoxAccessionCutOff.Text != string.Empty)
-                {
-                    if (!int.TryParse(this.textBoxAccessionCutOff.Text, out accessionCutOff))
-                    {
-                        ShowMessage(MessageType.Warning, "Please enter a valid accession cut off value");
-                    }
-                    else
-                    {
-                        ReadAccessionFile(this.AccessionLocustagPathwaysDic, this.TaxIdAccessionsDic, this.AccessionsSequenceDic);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowMessage(MessageType.Error, string.Format("An error occurred while visualizing accession mappings.{0}Method: {1}.{2}{0}Exception: {3}",
-                   Environment.NewLine, ex.Message, this.GetType().Name, MethodBase.GetCurrentMethod().Name));
-            }
-        }
-
+             
         /// <summary>
         /// Reads mapping file with accessions locus_tags and pathways. And calls PathwayViewer's : ReadaccessionLocustagPathwayFile
         /// </summary>
@@ -624,11 +616,10 @@
 
             try
             {
+                // open new file dialog
                 OpenFileDialog dialog = new OpenFileDialog();
                 dialog.Multiselect = false;
                 dialog.ShowDialog();
-
-                Cursor = Cursors.WaitCursor;
 
                 ShowMessage(MessageType.Info, "Reading KEGG/NCBI mapping file. Please wait ...");
                 if (dialog.FileName.Length > 0)
@@ -649,8 +640,11 @@
 
             return accessionLocustagPathwaysDic;
         }
-               
 
+
+        /// <summary>
+        /// Get all taxonomic information. Calls PathwayViewer's : ReadTaxonomies
+        /// </summary>
         private void GetTaxonomies()
         {
             try
@@ -672,16 +666,24 @@
                    Environment.NewLine, ex.Message, this.GetType().Name, MethodBase.GetCurrentMethod().Name));
             }
         }
-        
+
+        /// <summary>
+        ///  Calls PathwayViewers's : ReadAccessionFile and WriteAccessionSequenceToFasta
+        /// </summary>
+        /// <param name="accessionLocustagPathwaysDic">Dictionary containing accession,locus_tags pathways</param>
+        /// <param name="taxonomyAccessionDic">Dictionary containing accession and taxonomies</param>
+        /// <param name="accessionsSequenceDic">Dictionary containing accession and sequences</param>
         private void ReadAccessionFile(Dictionary<string, Dictionary<string, List<Pathway>>> accessionLocustagPathwaysDic, 
                                        Dictionary<int, List<string>> taxonomyAccessionDic,
                                        Dictionary<string, Dictionary<string, string>> accessionsSequenceDic)
         {
             try
             {
+                // determine max number of accessions to process
                 int accessionCutOff = 0;
                 if (int.TryParse(this.textBoxAccessionCutOff.Text, out accessionCutOff))
                 {
+                    // open file select dialog
                     OpenFileDialog dialog = new OpenFileDialog();
                     dialog.Multiselect = false;
                     dialog.ShowDialog();
@@ -691,6 +693,7 @@
                     {
                         this.InputAccessions = this.Controller.FileHelper.ReadAccessionFile(dialog.FileName, accessionLocustagPathwaysDic, taxonomyAccessionDic, accessionsSequenceDic, accessionCutOff);
                         ShowMessage(MessageType.Info, "Reading of accession file was finished ...");
+                        // writes sequences to separate fasta files
                         this.Controller.FileHelper.WriteAccessionSequenceToFasta(this.InputAccessions);
                     }
                     else
@@ -710,6 +713,38 @@
             }
         }
 
+        /// <summary>
+        /// Generates fasta files for the SSU and the LSU and calls PathwayViewer's: ReadaccessionLocustagPathwayFile.
+        /// </summary>
+        private void GenerateDataForMultipleSequenceAlignment()
+        {
+            try
+            {
+                int accessionCutOff = 0;
+                // apply cut off value
+                if (this.textBoxAccessionCutOff.Text != string.Empty)
+                {
+                    if (!int.TryParse(this.textBoxAccessionCutOff.Text, out accessionCutOff))
+                    {
+                        ShowMessage(MessageType.Warning, "Please enter a valid accession cut off value");
+                    }
+                    else
+                    {
+                        ReadAccessionFile(this.AccessionLocustagPathwaysDic, this.TaxIdAccessionsDic, this.AccessionsSequenceDic);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(MessageType.Error, string.Format("An error occurred while visualizing accession mappings.{0}Method: {1}.{2}{0}Exception: {3}",
+                   Environment.NewLine, ex.Message, this.GetType().Name, MethodBase.GetCurrentMethod().Name));
+            }
+        }
+
+        /// <summary>
+        /// Generates a Multiple Sequence Alignment with MUSCLE
+        /// </summary>
+        /// <param name="extractCode">extraction code from project</param>
         private void CreateMultipleSequenceAlignment(string extractCode)
         {
             try
@@ -726,10 +761,12 @@
                 {
                     string fileName = string.Format("muscle_SSU_alignment_output_{0}.fasta", extractCode);
                     string filePath = multipleSequenceAlignmentOutputPath + fileName;
+                    // MUSCLE arguments
                     string arguments = string.Format("-in {0} {1} -out {2} {3}", dialog.FileName, "-fasta", filePath, "-group");
 
                     ShowMessage(MessageType.Info, "Starting to create a multiple sequence alignment file....");
 
+                    // start process 
                     ProcessStartInfo processStartInfo = new ProcessStartInfo(muscleFilePath);
                     processStartInfo.Arguments = arguments;
                     processStartInfo.UseShellExecute = false;
@@ -753,27 +790,32 @@
             }
         }
 
+        /// <summary>
+        /// Generates a newick string from the previous generated multiple sequence alignment.
+        /// </summary>
+        /// <param name="extractCode">extraction code from project</param>
         private void GenerateNewickTreefromMultipleSequenceAlignment(string extractCode)
         {
             try
             {
                 string newickTreeOutputFilePath = this.Controller.NewickTreeOutputPath;
 
+                // open new file dialog
                 OpenFileDialog dialog = new OpenFileDialog();
                 dialog.Multiselect = false;
                 dialog.ShowDialog();
 
                 if (dialog.FileName.Length > 0)
                 {
+                    // determine variables for MUSCLE
                     string muscleFilePath = this.Controller.MultipleSequenceAlignmentMusclePath;
-
                     string outputFileName = string.Format("newick_tree_SSU_{0}.newick", extractCode);
                     string outputFilePath = newickTreeOutputFilePath + outputFileName;
-                    //muscle - maketree -in seqs.afa -out seqs.phy -cluster neighborjoining
                     string arguments = string.Format("{0} -in {1} -out {2} {3}", "-maketree", dialog.FileName, outputFilePath, "-cluster neighborjoining");
 
                     ShowMessage(MessageType.Info, "Starting to create a tree file based on the selected multiple sequence alignment file....");
 
+                    // start process
                     ProcessStartInfo processStartInfo = new ProcessStartInfo(muscleFilePath);
                     processStartInfo.Arguments = arguments;
                     processStartInfo.UseShellExecute = false;
@@ -797,6 +839,10 @@
             }
         }
 
+        /// <summary>
+        /// Generates a phylogenetic tree.
+        /// </summary>
+        /// <param name="extractCode">extraction code from project</param>
         private void GeneratePhyloGeneticTreefromNewick(string extractCode)
         {
             try
@@ -815,7 +861,7 @@
                     
                 }
                 ShowMessage(MessageType.Info, "Finished generating HTML phylogenetic tree output file ...");
-
+                // open output in standard browser
                 Process.Start(outputFilePath);
             }
             catch (Exception ex)
@@ -826,6 +872,9 @@
 
         }
 
+        /// <summary>
+        /// Generates a Krona Plot.
+        /// </summary>
         private void GeneratePieChart()
         {
             try

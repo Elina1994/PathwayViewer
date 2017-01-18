@@ -2,6 +2,9 @@
 {
     using System.Collections.Generic;
 
+    /// <summary>
+    /// This class contains the Accession object properties
+    /// </summary>
     public class Accession
     {
         public string Name = string.Empty;

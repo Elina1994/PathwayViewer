@@ -78,12 +78,15 @@
 
             return dateTime;
         }
-        
+
         #endregion
 
         #region PRIVATE METHODs
 
-        
+
+        /// <summary>
+        /// Sets settings from configuration file
+        /// </summary>
         private void SetSettings()
         {
             try
@@ -95,6 +98,7 @@
 
                 if (serverSetting != null && mainDirSetting != null)
                 {
+                    // set configuration settings
                     this.MainDir = Path.Combine(mainDirSetting.Value.Split(';'));
                     this.MainDir = Path.Combine(serverSetting.Value, this.MainDir);
 
@@ -123,38 +127,7 @@
                     CompressedHtmlDir = GetSettingVariable(CompressedHtmlDir, "PhylogeneticTreeDir");
                     CompressedHtmlFilePath = GetSettingVariable(CompressedHtmlFilePath, "CompressedHtmlFile");
                     CompressedHtmlFileOutputPath = GetSettingVariable(CompressedHtmlFileOutputPath, "HtmlOutputDir");
-
-                    //if (System.Environment.OSVersion.Platform)
-
-
-                    // Replace global variables
-                    //MainDir = @"\\172.16.6.53\StageStorage\PathwayViewer\";
-                    //KeggDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Kegg";
-
-                    //KeggDatasetDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Kegg\KeggOrganisms_20161128.kegg";
-                    //KeggPathwaysDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Kegg\Pathways\";
-                    //LogDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Logs";
-
-                    //NcbiDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Ncbi";
-                    //NcbiGenomesDir = @"\\172.16.6.53\StageStorage\Genomes\";
-                    //KeggNcbiDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Kegg_Ncbi_Mapping";
-                    //InputAccessionDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Accession\";
-                    //AlignmentSetsDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Alignment\Input_Files";
-
-                    //KeggEntryScriptPath = @"\\172.16.6.53\StageStorage\PathwayViewer\Scripts\keggdatacollector.py";
-                    //NcbiGenbankScriptPath = @"\\172.16.6.53\StageStorage\PathwayViewer\Scripts\ncbi_datacollector.py";
-                    //AccessionsCollectingScriptPath = @"\\172.16.6.53\StageStorage\PathwayViewer\Scripts\accessionscollector.py";
-                    //MultipleSequenceAlignmentMusclePath = @"\\172.16.6.53\StageStorage\PathwayViewer\Tools\muscle3.8.31_i86win32.exe";
-
-                    //SilvaDatasetFilePath = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Silva\silva.fasta";
-                    //MultipleSequenceAlignmentOutputPath = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Alignment\Output_Files\";
-                    //NewickTreeOutputPath = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Alignment\Output_Files\NewickTree\";
-
-                    //TaxonomyFilePath = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Taxonomy\Taxonomy.tab";
-
-                    //CompressedHtmlDir = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Tree";
-                    //CompressedHtmlFilePath = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Tree\compressedHtmlScript.html";
-                    //CompressedHtmlFileOutputPath = @"\\172.16.6.53\StageStorage\PathwayViewer\Datasets\Tree\OutPutHtmlFiles";
+                        
                 }
             }
             catch (Exception ex)
@@ -163,6 +136,12 @@
             }
         }
 
+        /// <summary>
+        /// Gets variable setting from configuration file
+        /// </summary>
+        /// <param name="variable">Gets variable settings(header in config file)</param>
+        /// <param name="settingKey">key from configuration file</param>
+        /// <returns></returns>
         private string GetSettingVariable(string variable, string settingKey)
         {
             try
@@ -172,14 +151,14 @@
                 {
                     if (setting.Dir != string.Empty && setting.ValueType.ToUpper() != "LIST")
                     {
-                        // Gebruik deze folder variable voor de value
+                        // Use directory for value of variable
                         string settingDirVariable = string.Empty;
                         settingDirVariable = GetSettingVariable(settingDirVariable, setting.Dir);
                         variable = Path.Combine(this.MainDir, settingDirVariable, setting.Value);
                     }
                     else if (setting.Dir == string.Empty && setting.ValueType.ToUpper() == "LIST")
                     {
-                        // Bouw op uit verschillende folders
+                        // Build from different directories
                         variable = Path.Combine(setting.Value.Split(';'));
                         variable = Path.Combine(this.MainDir, variable);
                     }
@@ -220,12 +199,18 @@
             return variable;
         }
 
+        /// <summary>
+        /// Gets settings from configuration file
+        /// </summary>
+        /// <param name="key">key from configuration file</param>
+        /// <returns></returns>
         private Setting GetSetting(string key)
         {
             Setting setting = null;
 
             try
             {
+                // if key does not exist throw error
                 if (!this.Settings.TryGetValue(key, out setting))
                 {
                     throw new Exception(string.Format("Unknown key: {0}", key));
